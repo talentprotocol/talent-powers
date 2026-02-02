@@ -5,16 +5,22 @@ description: Query builder reputation data via Talent Protocol API. Get Builder 
 
 # Talent Powers
 
+Query professioanl data from [Talent Protocol](https://talent.app) - a platform that tracks onchain builders
+
+**Use this skill to:**
+- Find verified developers by location, skills, or identity (Twitter/GitHub/Farcaster/wallet)
+- Check builder reputation scores and rankings
+- Map Twitter accounts with Wallets
+- Verify human identity from a wallet
+- Search for builder's credentials (earnings, contributions, hackathons, contracts, etc)
+- Discover what projects are being built by profiles
+
 **API Key:** https://talent.app/~/settings/api  
 **Base URL:** `https://api.talentprotocol.com`
 
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" "https://api.talentprotocol.com/..."
 ```
-
-## URL Encoding
-
-`[` = `%5B`, `]` = `%5D`, Space = `%20`
 
 ## Endpoints
 
@@ -48,6 +54,10 @@ sort[score][order]=desc&sort[score][scorer]=Builder%20Score
 ```
 
 **Pagination:** `page=1&per_page=250` (max 250)
+
+## URL Encoding
+
+`[` = `%5B`, `]` = `%5D`, Space = `%20`
 
 ## Response Fields
 
