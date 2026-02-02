@@ -122,18 +122,16 @@ This matches locations ending with ", argentina" (e.g., "Buenos Aires, Argentina
 
 ## Credentials
 
-All from `/credentials?id={profile_id}`:
+All from `/credentials?id={profile_id}`.
+
+**Example queries** (there are many more available):
 
 | Data | Slug |
 |------|------|
 | Total followers | `total_followers` |
-| GitHub contributions | `github_total_contributions` |
 | Total earnings | `total_earnings` |
-| Base rewards | `base_builder_rewards_eth` |
-| ETHGlobal | `eth_global_hacker`, `eth_global_finalist` |
-| Events | `base_basecamp`, `farcaster_farcon_nyc_2025_attendee` |
-| Verification | `talent_protocol_human_checkmark`, `world_id_human` |
-| Airdrops | `wallet_connect_airdrop_one`, `talent_builder_rewards_talent` |
+| Verification | `talent_protocol_human_checkmark` |
+| Contracts | `base_mainnet_active_contracts`, `base_mainnet_contracts_deployed` |
 
 ---
 
