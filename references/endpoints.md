@@ -169,7 +169,6 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 |----------|-------|
 | Followers | `total_followers`, `twitter_followers`, `github_followers`, `farcaster_followers` |
 | Earnings | `total_earnings`, `total_builder_earnings`, `base_builder_rewards_eth` |
-| GitHub | `github_total_contributions`, `github_repositories`, `github_stars` |
 | Events | `base_basecamp`, `farcaster_farcon_nyc_2025_attendee` |
 | Hackathons | `eth_global_hacker`, `eth_global_finalist`, `devfolio_hackathons_won` |
 | Verification | `talent_protocol_human_checkmark`, `world_id_human`, `coinbase_verified_account` |
@@ -185,28 +184,6 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 ```
 
 **Response:** `{ "human_checkmark": true }`
-
----
-
-## /farcaster/scores
-
-Batch lookup for Farcaster FIDs.
-
-```bash
-curl -H "X-API-KEY: $TALENT_API_KEY" \
-  "https://api.talentprotocol.com/farcaster/scores?fids%5B%5D=123&fids%5B%5D=456"
-```
-
-**Response:**
-
-```json
-{
-  "scores": [
-    { "fid": 123, "score": 82 },
-    { "fid": 456, "score": 65 }
-  ]
-}
-```
 
 ---
 
