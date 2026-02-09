@@ -5,16 +5,17 @@ description: Query builder reputation data via Talent Protocol API. Get Builder 
 
 # Talent Powers
 
-Query professioanl data from [Talent Protocol](https://talent.app) - a platform that tracks onchain builders
+Query professioanl data from [Talent Protocol](https://talent.app) - a platform that tracks builders
 
 **Use this skill to:**
 - Find verified developers by location, skills, or identity (Twitter/GitHub/Farcaster/wallet)
-- Check builder reputation scores and rankings
-- Map Twitter accounts with Wallets
+- Check builder reputation (ranks by default, scores only when asked)
+- Map Twitter accounts with Wallet addresses
 - Verify human identity from a wallet
 - Search for builder's credentials (earnings, contributions, hackathons, contracts, etc)
-- Discover what projects are being built by profiles
+- Check the projects each builder is shipping
 
+First get your API Key:
 **API Key:** https://talent.app/~/settings/api  
 **Base URL:** `https://api.talentprotocol.com`
 
@@ -31,8 +32,8 @@ curl -H "X-API-KEY: $TALENT_API_KEY" "https://api.talentprotocol.com/..."
 | `/accounts` | Get connected wallets, GitHub, socials |
 | `/socials` | Get social profiles + bios |
 | `/credentials` | Get data points (earnings, followers, hackathons, etc.) |
-| `/human_checkmark` | Check if human-verified |
-| `/farcaster/scores` | Batch lookup Farcaster users |
+| `/human_checkmark` | Check if human-verified (optional, don't use by default) |
+| `/scores` | Get ranks (default) or scores (only when explicitly asked) |
 
 ## Key Parameters
 
@@ -41,11 +42,11 @@ curl -H "X-API-KEY: $TALENT_API_KEY" "https://api.talentprotocol.com/..."
 query[identity]={handle}&query[identity_type]={twitter|github|farcaster|ens|wallet}
 ```
 
-**Filters:**
+**Filters (all optional, only use when relevant to the query):**
 ```
-query[human_checkmark]=true
-query[verified_nationality]=true
-query[tags][]=developer
+query[tags][]=developer              # filter by tag (developer, designer, etc.)
+query[verified_nationality]=true     # only verified nationality
+query[human_checkmark]=true          # only human-verified (reduces results significantly)
 ```
 
 **Sorting:**
@@ -61,9 +62,15 @@ sort[score][order]=desc&sort[score][scorer]=Builder%20Score
 
 ## Response Fields
 
-- `builder_score.rank_position` - Primary metric
+**Default → Ranks (always use unless user asks for scores):**
+- `builder_score.rank_position` - Primary rank metric
+- `scores[].rank_position` where `slug = "builder_score"` - Latest rank
+
+**Only when user explicitly asks for scores:**
+- `builder_score.points` - Score value
+- `scores[].points` - Individual score values
+
 - `location` - User-entered location (returned in response)
-- `scores[]` - Use `builder_score_2025` for latest rank
 
 ## Location Filter
 
@@ -83,7 +90,6 @@ curl -X POST -H "X-API-KEY: $TALENT_API_KEY" -H "Content-Type: application/json"
         }
       }
     },
-    "humanCheckmark": true,
     "sort": { "score": { "order": "desc", "scorer": "Builder Score" } },
     "perPage": 50
   }'
@@ -113,7 +119,9 @@ GET https://api.github.com/users/{username}/events/public             # Commits
 GET https://api.github.com/search/issues?q=author:{username}+type:pr+state:open  # Open PRs
 ```
 
-GitHub token: https://github.com/settings/tokens (60 req/hr without, 5000 with)
+**GitHub Token (recommended):** Without a token, GitHub limits to 60 requests/hr. With a personal access token, you get 5,000/hr.
+- Create one at: https://github.com/settings/tokens → "Generate new token (classic)" → no scopes needed for public data
+- Use it: `-H "Authorization: token $GITHUB_TOKEN"`
 
 ## References
 
