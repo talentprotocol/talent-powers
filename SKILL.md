@@ -1,5 +1,5 @@
 ---
-name: talent-powers
+name: builder-data
 description: Query builder reputation data via Talent Protocol API. Get Builder Rank, verify humans, resolve identities (Twitter/Farcaster/GitHub/wallet), search by location/country, get credentials, and enrich with GitHub data.
 ---
 
