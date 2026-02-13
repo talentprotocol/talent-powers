@@ -5,7 +5,7 @@ description: Query builder reputation data via Talent Protocol API. Get Builder 
 
 # Talent Powers
 
-Query professioanl data from [Talent Protocol](https://talent.app) - a platform that tracks builders
+Query professional data from [Talent Protocol](https://talent.app) - a platform that tracks builders
 
 **Use this skill to:**
 - Find verified developers by location, skills, or identity (Twitter/GitHub/Farcaster/wallet)
@@ -15,8 +15,13 @@ Query professioanl data from [Talent Protocol](https://talent.app) - a platform 
 - Search for builder's credentials (earnings, contributions, hackathons, contracts, etc)
 - Check the projects each builder is shipping
 
-First get your API Key:
-**API Key:** https://talent.app/~/settings/api  
+## Required Credentials
+
+| Variable | Required | Description | Get it at |
+|----------|----------|-------------|-----------|
+| `TALENT_API_KEY` | **Yes** | API key for Talent Protocol (read access to profile/identity data) | https://talent.app/~/settings/api |
+| `GITHUB_TOKEN` | No | Personal access token for higher GitHub rate limits (60/hr → 5,000/hr) | https://github.com/settings/tokens |
+
 **Base URL:** `https://api.talentprotocol.com`
 
 ```bash
