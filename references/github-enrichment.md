@@ -1,8 +1,15 @@
 # GitHub Enrichment
 
-Get projects/repos by resolving identity → GitHub username → GitHub API.
+Enrich Talent profiles with GitHub data by resolving identity → GitHub username → GitHub API.
 
-**GitHub Token:** https://github.com/settings/tokens (60 req/hr without, 5000 with)
+**GitHub Token:** https://github.com/settings/tokens — "Generate new token (classic)", no scopes needed for public data.
+
+| API | Without token | With token |
+|-----|---------------|------------|
+| REST | 60/hr | 5,000/hr |
+| Search | 10/min | 30/min |
+
+**Auth header:** `-H "Authorization: token $GITHUB_TOKEN"`
 
 ---
 
@@ -12,9 +19,9 @@ Get projects/repos by resolving identity → GitHub username → GitHub API.
 # 1. Get GitHub username from Talent Protocol
 curl -H "X-API-KEY: $TALENT_API_KEY" \
   "https://api.talentprotocol.com/accounts?id={profile_id}"
-# Response: { "source": "github", "username": "jessepollak" }
+# Look for: { "source": "github", "username": "..." }
 
-# 2. Query GitHub API
+# 2. Use that username in the GitHub API calls below
 ```
 
 ---
@@ -56,10 +63,7 @@ curl https://api.github.com/users/{username}
 ## Repos
 
 ```bash
-# Top by stars
 curl "https://api.github.com/users/{username}/repos?sort=stars&direction=desc&per_page=5"
-
-# Recent
 curl "https://api.github.com/users/{username}/repos?sort=pushed&direction=desc&per_page=5"
 ```
 
@@ -74,9 +78,7 @@ curl "https://api.github.com/users/{username}/repos?sort=pushed&direction=desc&p
 }
 ```
 
-**Forked repos:** Filter where `fork=true`
-
-**Languages:** Aggregate `language` field from repos
+Filter forked repos with `fork=true`. Aggregate the `language` field across repos for a tech stack summary.
 
 ---
 
@@ -94,12 +96,10 @@ curl "https://api.github.com/search/issues?q=author:{username}+type:pr+state:ope
 curl "https://api.github.com/users/{username}/events/public?per_page=100"
 ```
 
-Filter by `type`:
-- `PushEvent` - commits
-- `PullRequestEvent` - PRs
-- `IssuesEvent` - issues
+Filter by `type`: `PushEvent` (commits), `PullRequestEvent` (PRs), `IssuesEvent` (issues).
 
 Extract commits from PushEvent:
+
 ```javascript
 events.filter(e => e.type === 'PushEvent')
   .flatMap(e => e.payload.commits)
@@ -114,17 +114,3 @@ events.filter(e => e.type === 'PushEvent')
 curl -H "Accept: application/vnd.github.raw" \
   "https://api.github.com/repos/{owner}/{repo}/readme"
 ```
-
----
-
-## Auth
-
-```bash
-curl -H "Authorization: token $GITHUB_TOKEN" \
-  "https://api.github.com/users/{username}"
-```
-
-| API | Without token | With token |
-|-----|---------------|------------|
-| REST | 60/hr | 5,000/hr |
-| Search | 10/min | 30/min |

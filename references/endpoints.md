@@ -1,12 +1,8 @@
 # Endpoints
 
-**API Key:** https://talent.app/~/settings/api
+All endpoints use `GET` unless noted. Auth: `-H "X-API-KEY: $TALENT_API_KEY"`
 
-```bash
-curl -H "X-API-KEY: $TALENT_API_KEY" "https://api.talentprotocol.com/..."
-```
-
-**URL Encoding:** `[` = `%5B`, `]` = `%5D`
+URL encoding: `[` = `%5B`, `]` = `%5D`
 
 ---
 
@@ -24,16 +20,16 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 | `query[identity]` | `jessepollak` |
 | `query[identity_type]` | `twitter`, `github`, `farcaster`, `ens`, `wallet` |
 | `query[verified_nationality]` | `true` |
-| `query[human_checkmark]` | `true` (optional - reduces results, only use when user asks) |
+| `query[human_checkmark]` | `true` (optional — reduces results, only use when user asks) |
 | `query[tags][]` | `developer` |
 | `sort[score][order]` | `desc` |
 | `sort[score][scorer]` | `Builder Score` |
 | `page` | `1` |
 | `per_page` | `250` (max) |
 
-### POST with customQuery (for location filtering)
+### POST with customQuery (location filtering)
 
-**DO NOT USE** `query[standardized_location]` - it doesn't work.
+**DO NOT USE** `query[standardized_location]` — it doesn't work.
 
 **USE POST with `customQuery` regex:**
 
@@ -56,7 +52,7 @@ curl -X POST -H "X-API-KEY: $TALENT_API_KEY" -H "Content-Type: application/json"
 
 > **Note:** `"humanCheckmark": true` is optional. Don't include it by default — it reduces results. Only add when user explicitly asks.
 
-See [use-cases.md](use-cases.md#by-location-country) for more location examples.
+See [use-cases.md](use-cases.md#by-location-country) for more location patterns.
 
 ### Response
 
@@ -144,6 +140,33 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 
 ---
 
+## /scores
+
+Get Builder Score rank and points for a profile.
+
+```bash
+curl -H "X-API-KEY: $TALENT_API_KEY" \
+  "https://api.talentprotocol.com/scores?id={profile_id}"
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `id` | Profile ID |
+
+**Response:**
+
+```json
+{
+  "scores": [
+    { "slug": "builder_score", "rank_position": 127, "points": 229 }
+  ]
+}
+```
+
+**Default:** Return `rank_position`. Only include `points` when user explicitly asks for scores.
+
+---
+
 ## /credentials
 
 Get all data points: earnings, followers, hackathons, events, memberships.
@@ -198,6 +221,19 @@ List available data point slugs for a profile.
 curl -H "X-API-KEY: $TALENT_API_KEY" \
   "https://api.talentprotocol.com/data_points?id={profile_id}"
 ```
+
+---
+
+## /data_issuers_meta
+
+List all data issuers and credential slugs available across the platform.
+
+```bash
+curl -H "X-API-KEY: $TALENT_API_KEY" \
+  "https://api.talentprotocol.com/data_issuers_meta"
+```
+
+[API docs](https://docs.talentprotocol.com/docs/talent-api/api-reference/get-data-issuers-and-credentials-available)
 
 ---
 

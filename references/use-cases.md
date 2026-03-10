@@ -1,7 +1,5 @@
 # Use Cases
 
-**URL Encoding:** `[` = `%5B`, `]` = `%5D`
-
 ---
 
 ## Identity → Wallets
@@ -41,7 +39,7 @@ Response from `/search/advanced/profiles` includes:
 
 ---
 
-## Get the Top Builders
+## Top Builders
 
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" \
@@ -52,11 +50,13 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 
 ## By Location (Country)
 
-**DO NOT USE** `query[standardized_location]=Country` - it doesn't work.
+**DO NOT USE** `query[standardized_location]=Country` — it doesn't work.
 
-**USE `customQuery` with regex** - this queries the internal `standardized_location` field:
+**USE `customQuery` with regex** via POST:
 
-### Top Builders from Argentina
+### Basic pattern
+
+Replace country in regex: `"value": ".*{country}.*"`
 
 ```bash
 curl -X POST -H "X-API-KEY: $TALENT_API_KEY" -H "Content-Type: application/json" \
@@ -75,32 +75,9 @@ curl -X POST -H "X-API-KEY: $TALENT_API_KEY" -H "Content-Type: application/json"
   }'
 ```
 
-### Top Builders from Brazil
+Other examples: `.*united states.*`, `.*brazil.*`, `.*germany.*`, `.*nigeria.*`, `.*india.*`
 
-```bash
-curl -X POST -H "X-API-KEY: $TALENT_API_KEY" -H "Content-Type: application/json" \
-  "https://api.talentprotocol.com/search/advanced/profiles" \
-  -d '{
-    "customQuery": {
-      "regexp": {
-        "standardized_location": {
-          "value": ".*brazil.*",
-          "case_insensitive": true
-        }
-      }
-    },
-    "sort": { "score": { "order": "desc", "scorer": "Builder Score" } },
-    "perPage": 50
-  }'
-```
-
-### Pattern
-
-Replace country in regex: `"value": ".*{country}.*"`
-
-Examples: `.*united states.*`, `.*germany.*`, `.*nigeria.*`, `.*india.*`
-
-### More precise (country at end of string)
+### Precise match (country at end of string)
 
 To avoid matching "Georgia, USA" when searching for Georgia (country):
 
@@ -117,52 +94,44 @@ To avoid matching "Georgia, USA" when searching for Georgia (country):
 }
 ```
 
-This matches locations ending with ", argentina" (e.g., "Buenos Aires, Argentina")
+Matches locations ending with ", argentina" (e.g., "Buenos Aires, Argentina").
 
 ---
 
 ## Credentials
 
-All from `/credentials?id={profile_id}`.
+```bash
+curl -H "X-API-KEY: $TALENT_API_KEY" \
+  "https://api.talentprotocol.com/credentials?id={profile_id}"
+```
 
-**Discover all available data points:** Use `/data_issuers_meta` to get the full list of data issuers and credential slugs available. [API docs](https://docs.talentprotocol.com/docs/talent-api/api-reference/get-data-issuers-and-credentials-available)
+**Discover all available data points:**
 
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" \
   "https://api.talentprotocol.com/data_issuers_meta"
 ```
 
-**Common credential slugs:**
-
-| Data | Slug |
-|------|------|
-| Total followers | `total_followers` |
-| Total earnings | `total_earnings` |
-| Verification | `talent_protocol_human_checkmark` |
-| Contracts | `base_mainnet_active_contracts`, `base_mainnet_contracts_deployed` |
+[Full API docs](https://docs.talentprotocol.com/docs/talent-api/api-reference/get-data-issuers-and-credentials-available)
 
 ---
 
 ## GitHub Enrichment
 
+See [github-enrichment.md](github-enrichment.md) for the full flow. Quick summary:
+
 ```bash
 # 1. Get GitHub username from /accounts
-{ "source": "github", "username": "jessepollak" }
+# Look for: { "source": "github", "username": "jessepollak" }
 
-# 2. Query GitHub API
-curl "https://api.github.com/users/{username}"                    # Profile, company
-curl "https://api.github.com/users/{username}/repos?sort=stars&per_page=5"   # Top repos
-curl "https://api.github.com/users/{username}/repos?sort=pushed&per_page=5"  # Recent
-curl "https://api.github.com/users/{username}/events/public"      # Commits, activity
-curl "https://api.github.com/search/issues?q=author:{username}+type:pr+state:open&per_page=5"  # Open PRs
-curl "https://api.github.com/repos/{owner}/{repo}/readme"         # README
+# 2. Query GitHub API with that username
+curl "https://api.github.com/users/{username}"
+curl "https://api.github.com/users/{username}/repos?sort=stars&per_page=5"
 ```
-
-GitHub token for higher rate limits: https://github.com/settings/tokens
 
 ---
 
-## Batch Farcaster
+## Batch Farcaster Scores
 
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" \
