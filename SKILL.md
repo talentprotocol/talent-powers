@@ -29,34 +29,36 @@ Query professional data from [Talent](https://talent.app) - a platform that trac
 
 ## Workflow
 
-1. **Identify the task** — what does the user want? (identity lookup, search, credentials, GitHub enrichment)
-2. **Pick the right endpoint** — see the endpoint table below, then read [endpoints.md](references/endpoints.md) for full request/response details
-3. **Construct the API call** — use the patterns in [use-cases.md](references/use-cases.md) for common scenarios
-4. **For GitHub data** — resolve the GitHub username via `/accounts` first, then follow [github-enrichment.md](references/github-enrichment.md)
-5. **Present results** — default to `rank_position`; only include `points` when the user explicitly asks for scores
-6. **If 0 results** — broaden the search: remove `human_checkmark`, use a less specific location regex, or try a different identity type
+1. **Identify the task** — what does the user want?
+2. **Pick the right endpoint** — see [endpoints.md](references/endpoints.md)
+3. **Construct the API call** — see [use-cases.md](references/use-cases.md)
+4. **Disambiguate** — identity searches return impersonators. Pick the profile with the highest `builder_score`. Never blindly use the first result. If no result has a meaningful score, report that no confident match was found.
+5. **For GitHub data** — resolve GitHub username via `/accounts`, then follow [github-enrichment.md](references/github-enrichment.md)
+6. **Present results** — default to `rank_position`; only show `points` when explicitly asked. If `rank_position` is `null`, fall back to `points`.
+7. **If 0 results** — broaden: try a different identity type
 
 ## Endpoints
 
 | Endpoint | Purpose |
 |----------|---------|
-| `/search/advanced/profiles` | Search profiles by identity, tags, rank, verification |
+| `/search/advanced/profiles` | Search by identity, tags, rank, verification |
 | `/profile` | Get profile by ID |
 | `/accounts` | Get connected wallets, GitHub, socials |
 | `/socials` | Get social profiles + bios |
-| `/credentials` | Get data points (earnings, followers, hackathons, etc.) |
-| `/scores` | Get ranks (default) or scores (only when explicitly asked) |
-| `/human_checkmark` | Check if human-verified (only use when user asks) |
+| `/credentials` | Get data points (earnings, hackathons, etc.) |
+| `/scores` | Get ranks/scores. Slugs: `builder_score`, `builder_score_2025`, `creator_score` |
+| `/human_checkmark` | Check if human-verified. Response field: `humanity_verified` |
 | `/data_points` | List available data point slugs |
 | `/data_issuers_meta` | List all data issuers and credential slugs |
 
 ## Critical Rules
 
-- **Ranks by default.** Use `builder_score.rank_position`. Only return `points` when the user explicitly asks for scores.
-- **Location filtering is broken via GET.** Do NOT use `query[standardized_location]`. Use POST with `customQuery` regex instead — see [use-cases.md](references/use-cases.md#by-location-country).
-- **`human_checkmark` is opt-in.** It reduces results significantly. Only add when the user explicitly requests verified humans.
+- **Ranks by default.** Show `builder_score.rank_position`. Only show `points` when explicitly asked. `rank_position` is often `null` — fall back to `points`.
+- **Default to `builder_score` slug.** API also returns `builder_score_2025` (legacy) and `creator_score`.
+- **Location filtering is broken.** Both GET param and POST `customQuery` fail (302). Search broadly and filter client-side by `standardized_location` / `location`.
+- **Identity searches return impersonators.** Disambiguate by picking the profile with the highest `builder_score`. If no result has a meaningful score, report that no confident match was found.
 - **URL encoding:** `[` = `%5B`, `]` = `%5D`, Space = `%20`
-- **Max 250 results per page.**
+- **Max 25 results per page.** API rejects `per_page` values above 25. Paginate with `page` param for broader searches.
 
 ## Alternative: Talent Agent CLI
 
@@ -64,6 +66,6 @@ If `talent-agent` is installed (`npm install -g talent-agent`), it provides natu
 
 ## References
 
-- [endpoints.md](references/endpoints.md) — Full endpoint docs with parameters and response schemas
-- [use-cases.md](references/use-cases.md) — Common patterns and examples
+- [endpoints.md](references/endpoints.md) — Endpoint parameters and response schemas
+- [use-cases.md](references/use-cases.md) — Common patterns
 - [github-enrichment.md](references/github-enrichment.md) — GitHub API enrichment flow

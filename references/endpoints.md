@@ -1,14 +1,12 @@
 # Endpoints
 
-All endpoints use `GET` unless noted. Auth: `-H "X-API-KEY: $TALENT_API_KEY"`
+All endpoints use `GET`. Auth: `-H "X-API-KEY: $TALENT_API_KEY"`
 
 URL encoding: `[` = `%5B`, `]` = `%5D`
 
 ---
 
 ## /search/advanced/profiles
-
-### GET (identity, tags, verification)
 
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" \
@@ -20,41 +18,15 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 | `query[identity]` | `jessepollak` |
 | `query[identity_type]` | `twitter`, `github`, `farcaster`, `ens`, `wallet` |
 | `query[verified_nationality]` | `true` |
-| `query[human_checkmark]` | `true` (optional — reduces results, only use when user asks) |
 | `query[tags][]` | `developer` |
 | `sort[score][order]` | `desc` |
 | `sort[score][scorer]` | `Builder Score` |
 | `page` | `1` |
-| `per_page` | `250` (max) |
+| `per_page` | `25` (max; API rejects values > 25) |
 
-### POST with customQuery (location filtering)
+> **Location filtering is broken.** Both GET `query[standardized_location]` and POST `customQuery` regex return no results (POST gives 302). Filter client-side instead.
 
-**DO NOT USE** `query[standardized_location]` — it doesn't work.
-
-**USE POST with `customQuery` regex:**
-
-```bash
-curl -X POST -H "X-API-KEY: $TALENT_API_KEY" -H "Content-Type: application/json" \
-  "https://api.talentprotocol.com/search/advanced/profiles" \
-  -d '{
-    "customQuery": {
-      "regexp": {
-        "standardized_location": {
-          "value": ".*argentina.*",
-          "case_insensitive": true
-        }
-      }
-    },
-    "sort": { "score": { "order": "desc", "scorer": "Builder Score" } },
-    "perPage": 50
-  }'
-```
-
-> **Note:** `"humanCheckmark": true` is optional. Don't include it by default — it reduces results. Only add when user explicitly asks.
-
-See [use-cases.md](use-cases.md#by-location-country) for more location patterns.
-
-### Response
+**Response:**
 
 ```json
 {
@@ -63,19 +35,22 @@ See [use-cases.md](use-cases.md#by-location-country) for more location patterns.
     "name": "username",
     "display_name": "Name",
     "bio": "...",
-    "location": "Buenos Aires, Argentina",
+    "location": "east bay & the internet",
+    "standardized_location": "Unknown",
     "human_checkmark": true,
     "tags": ["developer"],
-    "builder_score": { "rank_position": 127, "points": 229 },
+    "builder_score": { "rank_position": 4967, "points": 17, "slug": "builder_score" },
     "scores": [
-      { "slug": "builder_score", "rank_position": 154 }
-    ]
+      { "slug": "builder_score", "rank_position": 4967, "points": 17 },
+      { "slug": "builder_score_2025", "rank_position": 244, "points": 213 },
+      { "slug": "creator_score", "rank_position": null, "points": 138 }
+    ],
+    "verified_nationality": true,
+    "talent_protocol_id": 353682
   }],
-  "pagination": { "current_page": 1, "total": 100 }
+  "pagination": { "current_page": 1, "last_page": 2, "total": 100, "total_for_page": 25 }
 }
 ```
-
-**Default:** Use `rank_position` fields. Only include `points` when user explicitly asks for scores.
 
 ---
 
@@ -107,10 +82,13 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 ```json
 {
   "accounts": [
-    { "source": "wallet", "identifier": "0x..." },
+    { "source": "wallet", "identifier": "0x...", "username": "0x..." },
     { "source": "github", "username": "jessepollak" },
-    { "source": "farcaster", "username": "jesse" },
-    { "source": "x_twitter", "username": "jessepollak" }
+    { "source": "farcaster", "username": "jesse.base.eth" },
+    { "source": "x_twitter", "username": "jessepollak" },
+    { "source": "linkedin", "username": "jessepollak" },
+    { "source": "worldcoin", "username": null },
+    { "source": "talent_protocol", "username": "jessepollak" }
   ]
 }
 ```
@@ -118,8 +96,6 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 ---
 
 ## /socials
-
-Get social profiles with bios and follower counts.
 
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" \
@@ -131,45 +107,39 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 ```json
 {
   "socials": [
-    { "social_name": "Twitter", "handle": "jessepollak", "bio": "...", "followers_count": 5000 },
-    { "social_name": "Github", "handle": "jessepollak", "followers_count": 200 },
-    { "social_name": "Farcaster", "handle": "jesse", "followers_count": 1500 }
+    { "social_name": "Twitter", "social_slug": "twitter", "handle": "jessepollak", "bio": "...", "followers_count": 236929, "profile_url": "https://www.x.com/jessepollak" },
+    { "social_name": "Farcaster", "social_slug": "farcaster", "handle": "jesse.base.eth", "followers_count": 377811 },
+    { "social_name": "Github", "social_slug": "github", "handle": "jessepollak", "followers_count": 1306, "location": "Oakland, CA" }
   ]
 }
 ```
 
+Other social types: Zora, Basenames, EFP, Linkedin
+
 ---
 
 ## /scores
-
-Get Builder Score rank and points for a profile.
 
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" \
   "https://api.talentprotocol.com/scores?id={profile_id}"
 ```
 
-| Parameter | Description |
-|-----------|-------------|
-| `id` | Profile ID |
-
 **Response:**
 
 ```json
 {
   "scores": [
-    { "slug": "builder_score", "rank_position": 127, "points": 229 }
+    { "slug": "builder_score", "rank_position": 4967, "points": 17 },
+    { "slug": "builder_score_2025", "rank_position": 244, "points": 213 },
+    { "slug": "creator_score", "rank_position": null, "points": 138 }
   ]
 }
 ```
 
-**Default:** Return `rank_position`. Only include `points` when user explicitly asks for scores.
-
 ---
 
 ## /credentials
-
-Get all data points: earnings, followers, hackathons, events, memberships.
 
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" \
@@ -181,10 +151,10 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 ```json
 {
   "credentials": [
-    { "slug": "github_total_contributions", "readable_value": "500" },
-    { "slug": "total_earnings", "readable_value": "1250" },
-    { "slug": "eth_global_hacker", "points": 10 },
-    { "slug": "base_basecamp", "points": 5 }
+    { "slug": "github_total_contributions", "name": "GitHub Contributions", "category": "Activity", "readable_value": "74", "uom": "contributions", "points": 11, "max_score": 12 },
+    { "slug": "total_builder_earnings", "name": "Builder Earnings", "category": "Impact", "readable_value": "5.51", "uom": "USDC", "points": 9 },
+    { "slug": "talent_protocol_verified_builder", "name": "Verified Onchain Builder", "category": "Badge", "points": 8 },
+    { "slug": "base_basecamp", "name": "Basecamp Attendee", "category": "Badge", "points": 4 }
   ]
 }
 ```
@@ -193,12 +163,10 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 
 | Category | Slugs |
 |----------|-------|
-| Followers | `total_followers`, `twitter_followers`, `github_followers`, `farcaster_followers` |
 | Earnings | `total_earnings`, `total_builder_earnings`, `base_builder_rewards_eth` |
 | Events | `base_basecamp`, `farcaster_farcon_nyc_2025_attendee` |
 | Hackathons | `eth_global_hacker`, `eth_global_finalist`, `devfolio_hackathons_won` |
 | Verification | `talent_protocol_human_checkmark`, `world_id_human`, `coinbase_verified_account` |
-| Memberships | `developer_dao_member`, `fwb_member` |
 
 ---
 
@@ -209,13 +177,11 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
   "https://api.talentprotocol.com/human_checkmark?id={profile_id}"
 ```
 
-**Response:** `{ "human_checkmark": true }`
+**Response:** `{ "humanity_verified": true }`
 
 ---
 
 ## /data_points
-
-List available data point slugs for a profile.
 
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" \
@@ -226,14 +192,10 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 
 ## /data_issuers_meta
 
-List all data issuers and credential slugs available across the platform.
-
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" \
   "https://api.talentprotocol.com/data_issuers_meta"
 ```
-
-[API docs](https://docs.talentprotocol.com/docs/talent-api/api-reference/get-data-issuers-and-credentials-available)
 
 ---
 
@@ -241,7 +203,7 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 
 | Status | Meaning |
 |--------|---------|
-| 400 | Bad request (e.g., per_page > 250) |
+| 400 | Bad request (e.g., per_page > 25) |
 | 401 | Missing/invalid API key |
 | 404 | Profile not found |
-| 302 | Used POST instead of GET |
+| 302 | Redirect — POST endpoint broken or deprecated |

@@ -8,9 +8,10 @@
 # 1. Search by identity
 curl -H "X-API-KEY: $TALENT_API_KEY" \
   "https://api.talentprotocol.com/search/advanced/profiles?query%5Bidentity%5D={handle}&query%5Bidentity_type%5D={identity_type}"
-# Response: profiles[0].id → use as profile_id
 
-# 2. Get wallets from profile ID
+# 2. Disambiguate — pick the profile with the highest builder_score
+
+# 3. Get wallets from profile ID
 curl -H "X-API-KEY: $TALENT_API_KEY" \
   "https://api.talentprotocol.com/accounts?id={profile_id}"
 # Filter: source = "wallet"
@@ -20,81 +21,25 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 
 ---
 
-## Get Rank (default behavior)
-
-Response from `/search/advanced/profiles` includes:
-
-```json
-{
-  "builder_score": { "rank_position": 127 },
-  "scores": [
-    { "slug": "builder_score", "rank_position": 154 }
-  ]
-}
-```
-
-**Default:** Always return `rank_position` values. Use `builder_score.rank_position` for latest rank.
-
-**Only when user explicitly asks for scores:** include `points` values from `builder_score.points` or `scores[].points`.
-
----
-
 ## Top Builders
 
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" \
-  "https://api.talentprotocol.com/search/advanced/profiles?sort%5Bscore%5D%5Border%5D=desc&sort%5Bscore%5D%5Bscorer%5D=Builder%20Score&per_page=250"
+  "https://api.talentprotocol.com/search/advanced/profiles?sort%5Bscore%5D%5Border%5D=desc&sort%5Bscore%5D%5Bscorer%5D=Builder%20Score&per_page=25"
 ```
 
 ---
 
 ## By Location (Country)
 
-**DO NOT USE** `query[standardized_location]=Country` — it doesn't work.
-
-**USE `customQuery` with regex** via POST:
-
-### Basic pattern
-
-Replace country in regex: `"value": ".*{country}.*"`
+> **Broken.** Both GET and POST location params fail. Workaround: fetch broadly + filter client-side by `standardized_location` or `location`. Since `per_page` max is 25, you may need to paginate through multiple pages.
 
 ```bash
-curl -X POST -H "X-API-KEY: $TALENT_API_KEY" -H "Content-Type: application/json" \
-  "https://api.talentprotocol.com/search/advanced/profiles" \
-  -d '{
-    "customQuery": {
-      "regexp": {
-        "standardized_location": {
-          "value": ".*argentina.*",
-          "case_insensitive": true
-        }
-      }
-    },
-    "sort": { "score": { "order": "desc", "scorer": "Builder Score" } },
-    "perPage": 50
-  }'
+curl -H "X-API-KEY: $TALENT_API_KEY" \
+  "https://api.talentprotocol.com/search/advanced/profiles?sort%5Bscore%5D%5Border%5D=desc&sort%5Bscore%5D%5Bscorer%5D=Builder%20Score&per_page=25&page=1"
+# Then filter results where standardized_location/location contains target country
+# Repeat with page=2, page=3, etc. until enough matches are found
 ```
-
-Other examples: `.*united states.*`, `.*brazil.*`, `.*germany.*`, `.*nigeria.*`, `.*india.*`
-
-### Precise match (country at end of string)
-
-To avoid matching "Georgia, USA" when searching for Georgia (country):
-
-```json
-{
-  "customQuery": {
-    "regexp": {
-      "standardized_location": {
-        "value": ".*,\\s*argentina$",
-        "case_insensitive": true
-      }
-    }
-  }
-}
-```
-
-Matches locations ending with ", argentina" (e.g., "Buenos Aires, Argentina").
 
 ---
 
@@ -105,26 +50,22 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
   "https://api.talentprotocol.com/credentials?id={profile_id}"
 ```
 
-**Discover all available data points:**
+Discover all available slugs:
 
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" \
   "https://api.talentprotocol.com/data_issuers_meta"
 ```
 
-[Full API docs](https://docs.talentprotocol.com/docs/talent-api/api-reference/get-data-issuers-and-credentials-available)
-
 ---
 
 ## GitHub Enrichment
 
-See [github-enrichment.md](github-enrichment.md) for the full flow. Quick summary:
+See [github-enrichment.md](github-enrichment.md) for full flow.
 
 ```bash
-# 1. Get GitHub username from /accounts
-# Look for: { "source": "github", "username": "jessepollak" }
-
-# 2. Query GitHub API with that username
+# 1. Get GitHub username from /accounts (source = "github")
+# 2. Query GitHub API
 curl "https://api.github.com/users/{username}"
 curl "https://api.github.com/users/{username}/repos?sort=stars&per_page=5"
 ```
