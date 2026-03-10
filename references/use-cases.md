@@ -1,7 +1,5 @@
 # Use Cases
 
-**URL Encoding:** `[` = `%5B`, `]` = `%5D`
-
 ---
 
 ## Identity → Wallets
@@ -10,9 +8,10 @@
 # 1. Search by identity
 curl -H "X-API-KEY: $TALENT_API_KEY" \
   "https://api.talentprotocol.com/search/advanced/profiles?query%5Bidentity%5D={handle}&query%5Bidentity_type%5D={identity_type}"
-# Response: profiles[0].id → use as profile_id
 
-# 2. Get wallets from profile ID
+# 2. Disambiguate — pick the profile with the highest builder_score
+
+# 3. Get wallets from profile ID
 curl -H "X-API-KEY: $TALENT_API_KEY" \
   "https://api.talentprotocol.com/accounts?id={profile_id}"
 # Filter: source = "wallet"
@@ -22,147 +21,58 @@ curl -H "X-API-KEY: $TALENT_API_KEY" \
 
 ---
 
-## Get Rank (default behavior)
-
-Response from `/search/advanced/profiles` includes:
-
-```json
-{
-  "builder_score": { "rank_position": 127 },
-  "scores": [
-    { "slug": "builder_score", "rank_position": 154 }
-  ]
-}
-```
-
-**Default:** Always return `rank_position` values. Use `builder_score.rank_position` for latest rank.
-
-**Only when user explicitly asks for scores:** include `points` values from `builder_score.points` or `scores[].points`.
-
----
-
-## Get the Top Builders
+## Top Builders
 
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" \
-  "https://api.talentprotocol.com/search/advanced/profiles?sort%5Bscore%5D%5Border%5D=desc&sort%5Bscore%5D%5Bscorer%5D=Builder%20Score&per_page=250"
+  "https://api.talentprotocol.com/search/advanced/profiles?sort%5Bscore%5D%5Border%5D=desc&sort%5Bscore%5D%5Bscorer%5D=Builder%20Score&per_page=25"
 ```
 
 ---
 
 ## By Location (Country)
 
-**DO NOT USE** `query[standardized_location]=Country` - it doesn't work.
-
-**USE `customQuery` with regex** - this queries the internal `standardized_location` field:
-
-### Top Builders from Argentina
+> **Broken.** Both GET and POST location params fail. Workaround: fetch broadly + filter client-side by `standardized_location` or `location`. Since `per_page` max is 25, you may need to paginate through multiple pages.
 
 ```bash
-curl -X POST -H "X-API-KEY: $TALENT_API_KEY" -H "Content-Type: application/json" \
-  "https://api.talentprotocol.com/search/advanced/profiles" \
-  -d '{
-    "customQuery": {
-      "regexp": {
-        "standardized_location": {
-          "value": ".*argentina.*",
-          "case_insensitive": true
-        }
-      }
-    },
-    "sort": { "score": { "order": "desc", "scorer": "Builder Score" } },
-    "perPage": 50
-  }'
+curl -H "X-API-KEY: $TALENT_API_KEY" \
+  "https://api.talentprotocol.com/search/advanced/profiles?sort%5Bscore%5D%5Border%5D=desc&sort%5Bscore%5D%5Bscorer%5D=Builder%20Score&per_page=25&page=1"
+# Then filter results where standardized_location/location contains target country
+# Repeat with page=2, page=3, etc. until enough matches are found
 ```
-
-### Top Builders from Brazil
-
-```bash
-curl -X POST -H "X-API-KEY: $TALENT_API_KEY" -H "Content-Type: application/json" \
-  "https://api.talentprotocol.com/search/advanced/profiles" \
-  -d '{
-    "customQuery": {
-      "regexp": {
-        "standardized_location": {
-          "value": ".*brazil.*",
-          "case_insensitive": true
-        }
-      }
-    },
-    "sort": { "score": { "order": "desc", "scorer": "Builder Score" } },
-    "perPage": 50
-  }'
-```
-
-### Pattern
-
-Replace country in regex: `"value": ".*{country}.*"`
-
-Examples: `.*united states.*`, `.*germany.*`, `.*nigeria.*`, `.*india.*`
-
-### More precise (country at end of string)
-
-To avoid matching "Georgia, USA" when searching for Georgia (country):
-
-```json
-{
-  "customQuery": {
-    "regexp": {
-      "standardized_location": {
-        "value": ".*,\\s*argentina$",
-        "case_insensitive": true
-      }
-    }
-  }
-}
-```
-
-This matches locations ending with ", argentina" (e.g., "Buenos Aires, Argentina")
 
 ---
 
 ## Credentials
 
-All from `/credentials?id={profile_id}`.
+```bash
+curl -H "X-API-KEY: $TALENT_API_KEY" \
+  "https://api.talentprotocol.com/credentials?id={profile_id}"
+```
 
-**Discover all available data points:** Use `/data_issuers_meta` to get the full list of data issuers and credential slugs available. [API docs](https://docs.talentprotocol.com/docs/talent-api/api-reference/get-data-issuers-and-credentials-available)
+Discover all available slugs:
 
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" \
   "https://api.talentprotocol.com/data_issuers_meta"
 ```
 
-**Common credential slugs:**
-
-| Data | Slug |
-|------|------|
-| Total followers | `total_followers` |
-| Total earnings | `total_earnings` |
-| Verification | `talent_protocol_human_checkmark` |
-| Contracts | `base_mainnet_active_contracts`, `base_mainnet_contracts_deployed` |
-
 ---
 
 ## GitHub Enrichment
 
+See [github-enrichment.md](github-enrichment.md) for full flow.
+
 ```bash
-# 1. Get GitHub username from /accounts
-{ "source": "github", "username": "jessepollak" }
-
+# 1. Get GitHub username from /accounts (source = "github")
 # 2. Query GitHub API
-curl "https://api.github.com/users/{username}"                    # Profile, company
-curl "https://api.github.com/users/{username}/repos?sort=stars&per_page=5"   # Top repos
-curl "https://api.github.com/users/{username}/repos?sort=pushed&per_page=5"  # Recent
-curl "https://api.github.com/users/{username}/events/public"      # Commits, activity
-curl "https://api.github.com/search/issues?q=author:{username}+type:pr+state:open&per_page=5"  # Open PRs
-curl "https://api.github.com/repos/{owner}/{repo}/readme"         # README
+curl "https://api.github.com/users/{username}"
+curl "https://api.github.com/users/{username}/repos?sort=stars&per_page=5"
 ```
-
-GitHub token for higher rate limits: https://github.com/settings/tokens
 
 ---
 
-## Batch Farcaster
+## Batch Farcaster Scores
 
 ```bash
 curl -H "X-API-KEY: $TALENT_API_KEY" \
